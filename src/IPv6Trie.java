@@ -11,10 +11,11 @@ public class IPv6Trie {
     private int allocatedSize;
     private int left[], right[];
     private int[] value;
+    public static final int INIT_SIZE = 1024;
     public static final String CSV_PATH = "e:/GeoLite2-Country-Blocks-IPv6.csv"; //IPv6数据文件，测试时作为库文件写入到字典树中
 
     public IPv6Trie() {
-        init(1024);
+        init(INIT_SIZE);
     }
 
     /**
