@@ -41,21 +41,20 @@ public class IPv6Trie {
      * @param text        IPv6地址对应的位置信息
      */
     public void put(String IPv6Address, int text) {
+
+        //获取网络前缀
         int index = IPv6Address.indexOf("/");
         int length = Integer.parseInt(IPv6Address.substring(index + 1, IPv6Address.length()));
-        //System.out.println(length);
-        String address = decompress(IPv6Address).replaceAll(":", "");
-        address = address.substring(0, address.indexOf('/'));
 
+        //获取不带/的IPv6地址
+        String addr = IPv6Address.substring(0, index);
+        //获取解压缩后的ipv6地址
+        String address = decompress(addr).replaceAll(":", "");
         //System.out.println(address);
-        StringBuilder bString = new StringBuilder();
-        String tmp;
-        for (int i = 0; i < address.length(); i++) {
-            tmp = "0000" + Integer.toBinaryString(Integer.parseInt(address.substring(i, i + 1), 16));
-            bString.append(tmp.substring(tmp.length() - 4));
-        }
-        //System.out.println(bString);
-        char[] addressChars = bString.toString().toCharArray();
+
+        //将二进制串转化为字符数组
+        char[] addressChars = getBinaryIPv6Address(address).toCharArray();
+
         int node = 0;
         int counter = 0;
         for (char ch : addressChars) {
@@ -97,18 +96,8 @@ public class IPv6Trie {
      * @return 对应的位置信息
      */
     public int get(String IPv6Address) {
-        int index = IPv6Address.indexOf("/");
-        int length = Integer.parseInt(IPv6Address.substring(index + 1, IPv6Address.length()));
         String address = decompress(IPv6Address).replaceAll(":", "");
-        address = address.substring(0, address.indexOf('/'));
-        StringBuilder bString = new StringBuilder();
-        String tmp;
-        for (int i = 0; i < address.length(); i++) {
-            tmp = "0000" + Integer.toBinaryString(Integer.parseInt(address.substring(i, i + 1), 16));
-            bString.append(tmp.substring(tmp.length() - 4));
-        }
-        //System.out.println(bString);
-        char[] addressChars = bString.toString().toCharArray();
+        char[] addressChars = getBinaryIPv6Address(address).toCharArray();
         int node = 0;
         int returnValue = -1;
         int counter = 0;
@@ -128,12 +117,23 @@ public class IPv6Trie {
                     returnValue = value[node];
                 }
             }
-            if(counter >= length){
-                break;
-            }
-
         }
         return returnValue;
+    }
+
+    /**
+     *  将IPv6地址转换为二进制串
+     * @param depressedAddress 不带/和:的解压缩的16进制IPv6地址  2606470000000000000000006812ec4b
+     * @return 二进制字符串
+     */
+    private String getBinaryIPv6Address(String depressedAddress){
+        StringBuilder bString = new StringBuilder();
+        String tmp;
+        for (int i = 0; i < depressedAddress.length(); i++) {
+            tmp = "0000" + Integer.toBinaryString(Integer.parseInt(depressedAddress.substring(i, i + 1), 16));
+            bString.append(tmp.substring(tmp.length() - 4));
+        }
+        return bString.toString();
     }
 
     /**
@@ -164,15 +164,14 @@ public class IPv6Trie {
      * @return 返回未被压缩的IPv6地址 xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
      */
     private static String decompress(String iPv6Address) {
-        int index = iPv6Address.indexOf("/");
-        String addr = iPv6Address.substring(0, index);
+        //System.out.println("before decompress: " + iPv6Address);
         int left = 0, right = 0;
         StringBuilder str = new StringBuilder();
-        if (addr.contains("::")) {
-            String[] address = addr.split("::");
+        if (iPv6Address.contains("::")) {
+            String[] address = iPv6Address.split("::");
             if (address.length == 0) { //::
                 str.append("0000:0000:0000:0000:0000:0000:0000:0000");
-                str.append(iPv6Address.substring(index, iPv6Address.length()));
+
                 return str.toString();
             } else if (address.length == 2) { //::1或1::1
 
@@ -216,7 +215,7 @@ public class IPv6Trie {
             }
 
         } else { //不包含::
-            str.append(addr);
+            str.append(iPv6Address);
         }
         String address = str.toString();
         String[] items = address.split(":");
@@ -233,7 +232,7 @@ public class IPv6Trie {
 
         }
         stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-        stringBuilder.append(iPv6Address.substring(index, iPv6Address.length()));
+        //System.out.println("depressedAddress: " + stringBuilder.toString());
         return stringBuilder.toString();
 
 
@@ -241,14 +240,12 @@ public class IPv6Trie {
 
     public static void main(String[] args) {
         IPv6Trie iPv6Trie = new IPv6Trie();
-        /*iPv6Trie.put("1111:1111:1111:0000::0","1");
-        iPv6Trie.put("1111:1111:1111:1000::0","2");
-        System.out.println(iPv6Trie.get("1111:1111:1111:1000::0"));*/
-        //System.out.println(decompress("2607:f358:20:467:3b8c:afeb:b1e0:0/107"));
-        //iPv6Trie.put("2607:f358:20:467:3b8c:afeb:b1e0:0/107", 123);
-        //System.out.println(iPv6Trie.get("2607:f358:20:467:3b8c:afeb:b1f3:0/104"));
-        //put("1111::103:20:0:A211", "123");
-        try {
+        iPv6Trie.put("2606:4700::6812:ec4b/32",1);
+        iPv6Trie.put("2606:4700::6812:ec4b/64",2);
+        iPv6Trie.put("2606:4700::6812:ec4b/126",5);
+        System.out.println(iPv6Trie.get("2606:4700::6812:ec4b"));
+
+        /*try {
             BufferedReader br = new BufferedReader(new FileReader(CSV_PATH));
 
             String line ;
@@ -262,7 +259,7 @@ public class IPv6Trie {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println(iPv6Trie.get("2c0f:feb0:8000::/33"));
+        System.out.println(iPv6Trie.get("2c0f:feb0:8000::/33"));*/
 
     }
 }
